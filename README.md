@@ -3,10 +3,11 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3%2B-orange.svg)](https://scikit-learn.org/)
-[![Hardware](https://img.shields.io/badge/Hardware-Apple%20MPS%20%7C%20CUDA-green.svg)](#training-environment--performance)
+[![Hardware](https://img.shields.io/badge/Hardware-Lenovo%20%7C%20Windows%2011%20%7C%20Intel%20Core%20Ultra-blue.svg)](#development--runtime-environment)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Author:** Dheeraj Chavan  
+**Repository:** [https://github.com/DheerajChavan23/anomaly_detection](https://github.com/DheerajChavan23/anomaly_detection)  
 **Architecture:** Tri-Model Weighted Ensemble (Transformer Autoencoder · MLP Autoencoder · Isolation Forest)  
 **Telemetry Scope:** 129,600 Operational Records · 37 Cross-Layer KPIs · 13 Anomaly Categories · 7 Observability Tiers  
 **Key Results:** 100% Recall on Catastrophic Incidents (Zero False Negatives) · 85% Precision on High-Risk Degradations · **€2.2M Uncovered Revenue Recovery Opportunity**
@@ -22,7 +23,7 @@ In production, static rules exhibit two severe shortcomings:
 2. **Silent Degradation & Latent Misalignments:** Catastrophic network outages almost always begin as subtle, multi-source anomalies (e.g., minor packet loss compounded by slow database connection pool replenishment and pod memory throttling). These multi-metric cascades remain entirely invisible to static rules until subscriber service drops.
 
 ### Core Achievements & Quantified Value
-* **100,000+ Operational Records Analyzed:** Engineered an end-to-end unsupervised telemetry engine trained on 129,600 fine-grained subscriber telemetry time-steps (90 days at 1-minute resolution) across 37 operational KPIs without requiring manual labeling.
+* **100,000+ Operational Records Analyzed:** Engineered an end-to-end unsupervised telemetry engine in Python trained on 129,600 fine-grained subscriber telemetry time-steps (90 days at 1-minute resolution) across 37 operational KPIs without requiring manual labeling.
 * **Dynamic Multi-Source Thresholding:** Established multi-tiered statistical calibration ($p_1 / p_{99}$ empirical bounds + $\mu + 5\sigma$) across 7 infrastructure layers, eliminating rigid static limits and dynamically adapting to diurnal and weekly usage cycles.
 * **85% Precision on High-Risk Degradation Patterns:** Tuned dynamic high-severity alerting ($\text{Ensemble Score} \ge 0.85$), filtering out transient network jitters and pinpointing genuine degradation with 85% precision.
 * **€2.2M Annualized Revenue Recovery Opportunity:** 
@@ -220,21 +221,22 @@ When the ensemble score surpasses configured thresholds, an incident payload is 
 | **Strict Data Leakage Prevention** | `StandardScaler` fitted strictly on healthy training partitions ($75\%$), transforming val and test |
 | **Temporal Integrity** | Strict chronological train/val/test splits (75% / 10% / 15%) — zero future-leakage |
 | **Cross-Layer Noise Resilience** | Rolling sliding-window buffering dampens single-tick network jitters |
-| **Hardware Portability** | Auto-detects Apple Silicon MPS $\to$ NVIDIA CUDA $\to$ CPU at runtime |
+| **Hardware Portability** | Runs on Windows PC (Lenovo / Intel Core Ultra), NVIDIA CUDA, or CPU environments |
 | **Schema Governance** | `KPI_COLUMNS` automatically derived from single-source-of-truth metadata dictionary |
 | **Stale Checkpoint Protection** | Orchestrator automatically purges stale checkpoints if feature schemas change |
 
 ---
 
-## Training Environment & Performance
+## Development & Runtime Environment
 
 | Parameter | Specification |
 |---|---|
-| **Primary Test Hardware** | Apple M5 Pro — Metal Performance Shaders (MPS) GPU |
-| **Supported Backends** | NVIDIA CUDA (Linux/Windows), Apple MPS (macOS), CPU |
+| **Development Machine** | Lenovo PC (Intel® Core™ Ultra 5 125H · Intel® Arc™ Graphics · Windows 11) |
+| **Operating System** | Windows 11 64-bit |
+| **Runtime & Frameworks** | Python 3.10+ · PyTorch 2.x (CUDA / DirectML / CPU compatible) · scikit-learn |
 | **Dataset Scale** | 129,600 rows × 37 features (90 days continuous @ 1-minute resolution) |
-| **Transformer AE Training** | ~17 seconds / epoch (early stops at epoch 11) |
-| **MLP AE Training** | ~5 seconds / epoch (early stops at epoch 16) |
+| **Transformer AE Training** | Fast multi-threaded batch execution with early stopping (converges epoch 11) |
+| **MLP AE Training** | High-throughput feedforward training with early stopping (converges epoch 16) |
 | **Isolation Forest Fit** | ~5 seconds total across 97,200 normal operational records |
 | **Batch Size & Optimizer** | Batch size = 64, Adam optimizer, Initial $\text{LR} = 10^{-3}$ |
 
@@ -243,7 +245,7 @@ When the ensemble score surpasses configured thresholds, an incident payload is 
 ## Repository Structure & Codebase Tour
 
 ```
-telecom-network-anomaly-detection/
+anomaly_detection/
 ├── config.py                   # Central configuration: KPIs, weights, thresholds, paths
 ├── data_generator.py           # 90-day synthetic telemetry generator + 13 anomaly injections
 ├── preprocessor.py             # StandardScaler, window segmentation, clean DataLoader splits
@@ -269,19 +271,19 @@ telecom-network-anomaly-detection/
 
 ### Module Breakdown
 
-* **[`config.py`](file:///c:/project/telecom-network-anomaly-detection/config.py):** Contains all hyperparameters, feature lists, thresholds, and paths. Defines `KPI_META` mapping metrics to chart colors and operational layers.
-* **[`data_generator.py`](file:///c:/project/telecom-network-anomaly-detection/data_generator.py):** Generates 90 days of 1-minute telemetry incorporating bimodal daily commuting peaks, weekend load shifts, infrastructure aging drift, and correlated cross-layer noise. Injects 13 real-world failure patterns into the test split.
-* **[`preprocessor.py`](file:///c:/project/telecom-network-anomaly-detection/preprocessor.py):** Removes anomalies from training data so models learn purely healthy profiles. Packages 37-dimensional sequences into $(N, 24, 37)$ PyTorch tensors.
-* **[`models/`](file:///c:/project/telecom-network-anomaly-detection/models):** Houses the three complementary detector architectures:
-  - [`transformer_autoencoder.py`](file:///c:/project/telecom-network-anomaly-detection/models/transformer_autoencoder.py): Sequence attention mechanism.
-  - [`mlp_autoencoder.py`](file:///c:/project/telecom-network-anomaly-detection/models/mlp_autoencoder.py): Global feature-compression network.
-  - [`isolation_forest.py`](file:///c:/project/telecom-network-anomaly-detection/models/isolation_forest.py): Fast tree-based isolation scorer.
-* **[`ensemble.py`](file:///c:/project/telecom-network-anomaly-detection/ensemble.py):** Calibrates empirical score distributions, computes the composite score, manages the live rolling window, and triggers the NOC alert handler.
-* **[`noc_alert.py`](file:///c:/project/telecom-network-anomaly-detection/noc_alert.py):** Formats alerts, maps scores to severity tiers (`LOW`, `MEDIUM`, `HIGH`), and dispatches HTTP POST requests with exponential backoff.
-* **[`trainer.py`](file:///c:/project/telecom-network-anomaly-detection/trainer.py):** Generalized PyTorch training loop used by both deep learning models with validation loss monitoring and checkpoint persistence.
-* **[`evaluate.py`](file:///c:/project/telecom-network-anomaly-detection/evaluate.py):** Produces multi-panel visualization dashboards showing individual KPI anomalies, layer summaries, and Precision-Recall curves.
-* **[`pipeline.py`](file:///c:/project/telecom-network-anomaly-detection/pipeline.py):** Simulates live production telemetry ingestion by feeding records into the rolling buffer at $100\times$ speed.
-* **[`predict.py`](file:///c:/project/telecom-network-anomaly-detection/predict.py):** Standalone production CLI script to score unlabelled incoming CSV telemetry.
+* **[`config.py`](config.py):** Contains all hyperparameters, feature lists, thresholds, and paths. Defines `KPI_META` mapping metrics to chart colors and operational layers.
+* **[`data_generator.py`](data_generator.py):** Generates 90 days of 1-minute telemetry incorporating bimodal daily commuting peaks, weekend load shifts, infrastructure aging drift, and correlated cross-layer noise. Injects 13 real-world failure patterns into the test split.
+* **[`preprocessor.py`](preprocessor.py):** Removes anomalies from training data so models learn purely healthy profiles. Packages 37-dimensional sequences into $(N, 24, 37)$ PyTorch tensors.
+* **[`models/`](models):** Houses the three complementary detector architectures:
+  - [`transformer_autoencoder.py`](models/transformer_autoencoder.py): Sequence attention mechanism.
+  - [`mlp_autoencoder.py`](models/mlp_autoencoder.py): Global feature-compression network.
+  - [`isolation_forest.py`](models/isolation_forest.py): Fast tree-based isolation scorer.
+* **[`ensemble.py`](ensemble.py):** Calibrates empirical score distributions, computes the composite score, manages the live rolling window, and triggers the NOC alert handler.
+* **[`noc_alert.py`](noc_alert.py):** Formats alerts, maps scores to severity tiers (`LOW`, `MEDIUM`, `HIGH`), and dispatches HTTP POST requests with exponential backoff.
+* **[`trainer.py`](trainer.py):** Generalized PyTorch training loop used by both deep learning models with validation loss monitoring and checkpoint persistence.
+* **[`evaluate.py`](evaluate.py):** Produces multi-panel visualization dashboards showing individual KPI anomalies, layer summaries, and Precision-Recall curves.
+* **[`pipeline.py`](pipeline.py):** Simulates live production telemetry ingestion by feeding records into the rolling buffer at $100\times$ speed.
+* **[`predict.py`](predict.py):** Standalone production CLI script to score unlabelled incoming CSV telemetry.
 
 ---
 
@@ -290,16 +292,16 @@ telecom-network-anomaly-detection/
 ### 1. Installation
 
 ```bash
-git clone https://github.com/anuragpsingh/telecom-network-anomaly-detection.git
-cd telecom-network-anomaly-detection
+git clone https://github.com/DheerajChavan23/anomaly_detection.git
+cd anomaly_detection
 pip install -r requirements.txt
 ```
 
-> **PyTorch Acceleration:** Automatically utilizes Apple Metal (MPS) on macOS or NVIDIA CUDA on Linux/Windows.
+> **Hardware Acceleration:** Runs natively on Windows 11 (Lenovo / Intel Core Ultra / CPU / CUDA) with automatic device selection.
 
 ### 2. Batch Inference with Pre-Trained Weights
 
-Pre-trained model weights and calibration parameters are included in [`checkpoints/`](file:///c:/project/telecom-network-anomaly-detection/checkpoints):
+Pre-trained model weights and calibration parameters are included in [`checkpoints/`](checkpoints):
 
 ```bash
 # Run inference on any telemetry CSV
@@ -345,7 +347,7 @@ Execution steps:
 
 ## Configuration Reference
 
-All settings can be customized in [`config.py`](file:///c:/project/telecom-network-anomaly-detection/config.py):
+All settings can be customized in [`config.py`](config.py):
 
 | Variable | Default Value | Description |
 |---|---|---|
@@ -361,6 +363,14 @@ All settings can be customized in [`config.py`](file:///c:/project/telecom-netwo
 | `NOC_ALERT_ENDPOINT` | `https://noc.example.com/api/v1/alerts` | Webhook URL (override via env var) |
 
 To route alerts to your internal monitoring infrastructure:
+
+**Windows PowerShell:**
+```powershell
+$env:NOC_ALERT_ENDPOINT="https://noc.internal.telecom.net/v1/alerts"
+$env:NOC_API_KEY="your-production-bearer-token"
+```
+
+**Bash:**
 ```bash
 export NOC_ALERT_ENDPOINT="https://noc.internal.telecom.net/v1/alerts"
 export NOC_API_KEY="your-production-bearer-token"
